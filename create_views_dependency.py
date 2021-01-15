@@ -181,13 +181,10 @@ class RedshiftViewDependency:
 class ViewLineage:
 
     # Connect to Neptune cluster connection
-    def __init__(self, neo4j_hostname):
+    def __init__(self, neo4j_hostname, neo4j_username, neo4j_password):
 
         try:
 
-            # Connect to Neo4j
-            neo4j_username = input("Neo4j username: ")
-            neo4j_password = getpass.getpass()
             self.driver = GraphDatabase.driver("bolt://%s:7687" % neo4j_hostname, auth=(neo4j_username, neo4j_password))
             logging.info('Connected to Neo4j')
 
@@ -240,9 +237,13 @@ class ViewLineage:
             logging.error('%s' % err)
             sys.exit()
         else:
-            logging.info('Graph has been clearned')
+            logging.info('Graph has been cleaned')
 
 def main():
+
+    # Ask credentials
+    neo4j_username = input("Neo4j username: ")
+    neo4j_password = getpass.getpass()
 
     # Set logging configuration
     logging.basicConfig(format='%(asctime)s %(levelname)s %(lineno)d %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
@@ -252,9 +253,8 @@ def main():
     viewDependency = RedshiftViewDependency(args.redshift_secret_name).get_view_dependency()
 
     # If output exists
-
     if viewDependency is not None and len(viewDependency)>0:
-        lineAge = ViewLineage(args.neo4j_hostname)
+        lineAge = ViewLineage(args.neo4j_hostname, neo4j_username, neo4j_password)
         lineAge.clear_graph()
 
         for row in viewDependency:
@@ -263,12 +263,14 @@ def main():
             lineAge.add_pair(row)
 
 
+    -- CHECK THIS
     for i in args.exclude_schema:
         if i == '':
             print ('----->>>')
 
 
 if __name__ == "__main__":
+
     main()
 
 
