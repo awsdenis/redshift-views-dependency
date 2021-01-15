@@ -1,4 +1,4 @@
 boto3
 psycopg2-binary
-requests
+requests==2.20.1
 neo4j
