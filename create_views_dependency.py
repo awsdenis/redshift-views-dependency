@@ -263,12 +263,6 @@ def main():
             lineAge.add_pair(row)
 
 
-    -- CHECK THIS
-    for i in args.exclude_schema:
-        if i == '':
-            print ('----->>>')
-
-
 if __name__ == "__main__":
 
     main()
