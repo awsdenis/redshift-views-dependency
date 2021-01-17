@@ -15,7 +15,9 @@ from botocore.exceptions import ClientError
 from requests.packages.urllib3 import Retry
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--redshift_secret_name',type=str, help='Provide AWS secret manager key for Redshift connection', required=True)
+parser.add_argument('--redshift_dbname',type=str, help='Provide Redshift database name', required=True)
+parser.add_argument('--redshift_host',type=str, help='Provide Redshift host', required=True)
+parser.add_argument('--redshift_port',type=str, help='Provide Redshift port', required=True)
 parser.add_argument('--neo4j_hostname',type=str, help='Provide Neo4j hostname', required=True)
 parser.add_argument('--exclude_schema',type=str, help='Provide Redshift schema which should be excluded from lineage generation', required=False, action='append', default=None)
 
@@ -26,34 +28,16 @@ args = parser.parse_args()
 class RedshiftViewDependency:
 
     # Connect to Redshift cluster
-    def __init__(self, secret_name):
-        # Create a Secrets Manager client
-        session = boto3.session.Session()
-        client = session.client(
-            service_name='secretsmanager',
-            region_name=self.get_instance_region()
-        )
+    def __init__(self, redshift_dbname, redshift_host, redshift_port, redshift_user, redshift_password):
 
+        # Connect to Redshift
         try:
-            get_secret_value_response = client.get_secret_value(
-                SecretId=secret_name
-            )
-        except ClientError as err:
+            self.conn = psycopg2.connect(dbname=redshift_dbname, host=redshift_host, port=redshift_port, user=redshift_user, password=redshift_password)
+            logging.info('Connected to Redshift')
+
+        except Exception as err:
             logging.error('%s' % err)
-
-        else:
-
-            if 'SecretString' in get_secret_value_response:
-                secret = json.loads(get_secret_value_response['SecretString'])
-
-                # Connect to Redshift
-                try:
-                    self.conn = psycopg2.connect(dbname=secret['redshift_dbname'], host=secret['redshift_host'], port=secret['redshift_port'], user=secret['redshift_user'], password=secret['redshift_password'])
-                    logging.info('Connected to Redshift')
-
-                except Exception as err:
-                    logging.error('%s' % err)
-                    sys.exit()
+            sys.exit()
 
     # Get view dependency
     def get_view_dependency(self):
@@ -159,24 +143,6 @@ class RedshiftViewDependency:
 
         logging.info('Disconnected from Redshift')
 
-    # Get instance region
-    def get_instance_region(self):
-
-        instance_identity_url = "http://169.254.169.254/latest/dynamic/instance-identity/document"
-        session = requests.Session()
-        retries = Retry(total=3, backoff_factor=0.3)
-        metadata_adapter = requests.adapters.HTTPAdapter(max_retries=retries)
-        session.mount("http://169.254.169.254/", metadata_adapter)
-        try:
-            r = requests.get(instance_identity_url, timeout=(2, 5))
-        except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError) as err:
-            logging.error("Connection to AWS EC2 Metadata timed out: " + str(err.__class__.__name__))
-            logging.error("Is this an EC2 instance? Is the AWS metadata endpoint blocked? (http://169.254.169.254/)")
-            sys.exit(1)
-        response_json = r.json()
-        region = response_json.get("region")
-        return (region)
-
 # View  dependency lineage class
 class ViewLineage:
 
@@ -241,16 +207,20 @@ class ViewLineage:
 
 def main():
 
-    # Ask credentials
+    # Request credentials
     neo4j_username = input("Neo4j username: ")
     neo4j_password = getpass.getpass()
+
+    # Request credentials
+    redshift_username = input("Redshift username: ")
+    redshift_password = getpass.getpass()
 
     # Set logging configuration
     logging.basicConfig(format='%(asctime)s %(levelname)s %(lineno)d %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
     # Create RedshiftViewDependency class instance
     viewDependency = None
-    viewDependency = RedshiftViewDependency(args.redshift_secret_name).get_view_dependency()
+    viewDependency = RedshiftViewDependency(args.redshift_dbname, args.redshift_host, args.redshift_port, args.redshift_username, args.redshift_host, args.redshift_password).get_view_dependency()
 
     # If output exists
     if viewDependency is not None and len(viewDependency)>0:
@@ -261,7 +231,6 @@ def main():
 
             # Add lineage pair
             lineAge.add_pair(row)
-
 
 if __name__ == "__main__":
 
