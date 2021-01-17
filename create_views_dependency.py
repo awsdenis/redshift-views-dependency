@@ -37,7 +37,7 @@ class RedshiftViewDependency:
 
         except Exception as err:
             logging.error('%s' % err)
-            sys.exit()
+            sys.exit(1)
 
     # Get view dependency
     def get_view_dependency(self):
@@ -129,6 +129,7 @@ class RedshiftViewDependency:
 
         except Exception as err:
             logging.error('%s' % err)
+            sys.exit(1)
 
         else:
             return viewDependencyLst
@@ -159,7 +160,7 @@ class ViewLineage:
 
         except Exception as err:
             logging.error('%s' % err)
-            sys.exit()
+            sys.exit(1)
 
     # Close connection
     def __del__(self):
@@ -192,6 +193,7 @@ class ViewLineage:
 
         except Exception as err:
             logging.error('%s' % err)
+            sys.exit(1)
 
     # Clear graph
     def clear_graph(self):
@@ -201,7 +203,7 @@ class ViewLineage:
             self.tx.run('MATCH (n) DETACH DELETE n')
         except Exception as err:
             logging.error('%s' % err)
-            sys.exit()
+            sys.exit(1)
         else:
             logging.info('Graph has been cleaned')
 
@@ -220,7 +222,7 @@ def main():
 
     # Create RedshiftViewDependency class instance
     viewDependency = None
-    viewDependency = RedshiftViewDependency(args.redshift_dbname, args.redshift_host, args.redshift_port, redshift_username, args.redshift_host, redshift_password).get_view_dependency()
+    viewDependency = RedshiftViewDependency(args.redshift_dbname, args.redshift_host, args.redshift_port, redshift_username, redshift_password).get_view_dependency()
 
     # If output exists
     if viewDependency is not None and len(viewDependency)>0:
