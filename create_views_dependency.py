@@ -220,7 +220,7 @@ def main():
 
     # Create RedshiftViewDependency class instance
     viewDependency = None
-    viewDependency = RedshiftViewDependency(args.redshift_dbname, args.redshift_host, args.redshift_port, args.redshift_username, args.redshift_host, args.redshift_password).get_view_dependency()
+    viewDependency = RedshiftViewDependency(args.redshift_dbname, args.redshift_host, args.redshift_port, redshift_username, args.redshift_host, redshift_password).get_view_dependency()
 
     # If output exists
     if viewDependency is not None and len(viewDependency)>0:
