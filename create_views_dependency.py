@@ -19,10 +19,8 @@ parser.add_argument('--redshift_dbname',type=str, help='Provide Redshift databas
 parser.add_argument('--redshift_host',type=str, help='Provide Redshift host', required=True)
 parser.add_argument('--redshift_port',type=str, help='Provide Redshift port', required=True)
 parser.add_argument('--neo4j_hostname',type=str, help='Provide Neo4j hostname', required=True)
-parser.add_argument('--exclude_schema',type=str, help='Provide Redshift schema which should be excluded from lineage generation', required=False, action='append', default=None)
 
 args = parser.parse_args()
-
 
 # Redshift view dependency class
 class RedshiftViewDependency:
@@ -173,8 +171,8 @@ class ViewLineage:
 
         try:
             self.tx.run("""
-                            MERGE (src:DBObject {{type: '{src_type}' ,schema: '{src_schema}', name: '{src_name}', fullname: '{src_schema}.{src_name}'}})
-                            MERGE (tgt:DBObject {{type: '{tgt_type}' ,schema: '{tgt_schema}', name: '{tgt_name}', fullname: '{tgt_schema}.{tgt_name}'}})
+                            MERGE (src:{src_type}{{type: '{src_type}' ,schema: '{src_schema}', name: '{src_name}', fullname: '{src_schema}.{src_name}'}})
+                            MERGE (tgt:{tgt_type} {{type: '{tgt_type}' ,schema: '{tgt_schema}', name: '{tgt_name}', fullname: '{tgt_schema}.{tgt_name}'}})
                             MERGE (src)-[s2t:source_to_target]->(tgt)
                         """.format (src_type = item['src_obj_type'],
                                src_schema = item['src_schema'],
